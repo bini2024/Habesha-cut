@@ -9,7 +9,7 @@ const barbers = [
         languages: ["Amharic", "English"],
         specialty: "Fades & Textured Hair",
         // NOTE: Replace this with the real barber's Calendly link later
-        calendlyUrl: "https://calendly.com/YOUR_CALENDLY_USERNAME/30min" 
+        calendlyUrl: "https://calendly.com/peterbenjamin858" 
     },
     {
         id: 2,
