@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habesha Cuts | Find Your Perfect Barber</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet">
+    <script src="https://assets.calendly.com/assets/external/widget.js" type="text/javascript" async></script>
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">
+            <h1>Habesha<span>Cuts</span></h1>
+        </div>
+        <div class="nav-links">
+            <a href="#" class="nav-item">Find a Barber</a>
+            <a href="#" class="nav-item">For Barbers</a>
+            <a href="#" class="btn-primary login-btn">Login</a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content">
+            <h2>Book top independent Habesha barbers in Canada.</h2>
+            <p>Skip the wait. Find specialists in your hair texture, book instantly, and secure your spot.</p>
+            
+            <div class="search-bar">
+                <input type="text" id="city-search" placeholder="Enter your city (e.g., Toronto)">
+                <button class="btn-primary" onclick="filterBarbers()">Search</button>
+            </div>
+        </div>
+    </header>
+
+    <section class="directory">
+        <div class="section-header">
+            <h3>Featured Barbers</h3>
+            <p>Discover top-rated talent near you.</p>
+        </div>
+        
+        <div class="barber-grid" id="barber-grid">
+            </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Habesha Cuts Canada. All rights reserved.</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
