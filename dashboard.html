@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Habesha Cuts</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body style="background-color: var(--off-white);">
+
+    <nav class="navbar">
+        <div class="logo">
+            <h1>Habesha<span>Cuts</span></h1>
+        </div>
+        <div class="nav-links">
+            <button id="logout-btn" class="btn-primary" style="background-color: var(--text-dark);">Log Out</button>
+        </div>
+    </nav>
+
+    <div style="padding: 50px 5%; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: var(--text-dark); margin-bottom: 10px;">My Barber Profile</h2>
+        <p style="color: var(--text-light); margin-bottom: 30px;">Update your details to appear on the live directory.</p>
+        
+        <div style="background-color: var(--white); padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+            <form id="profile-form">
+                <div class="form-group">
+                    <label for="barber-name">Full Name</label>
+                    <input type="text" id="barber-name" placeholder="E.g. Dawit M." required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="shop-name">Barbershop Name</label>
+                    <input type="text" id="shop-name" placeholder="E.g. Crown Barbershop" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="city-name">City</label>
+                    <input type="text" id="city-name" placeholder="E.g. Toronto" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="calendly-link">Calendly Link</label>
+                    <input type="url" id="calendly-link" placeholder="https://calendly.com/your-username" required>
+                </div>
+                
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Save Profile to Database</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
