@@ -57,7 +57,17 @@
                 <p style="color: var(--text-light); margin-bottom: 20px;">Update how you appear on the Habesha Cuts directory.</p>
                 
                 <div class="dashboard-card">
-                    <form id="profile-form">
+                   <form id="profile-form">
+                        <div class="form-group">
+                            <label>Profile Picture or Shop Logo</label>
+                            <input type="file" id="profile-pic" accept="image/*" style="border: none; padding: 0;">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Instagram Handle</label>
+                            <input type="text" id="insta-handle" placeholder="e.g. habeshacuts (no @ symbol)">
+                        </div>
+
                         <div class="form-group">
                             <label>Calendly Booking Link</label>
                             <input type="url" id="calendly-link" placeholder="https://calendly.com/your-username" required>
@@ -66,8 +76,14 @@
                             <label>Shop Location / City</label>
                             <input type="text" id="city-name" required>
                         </div>
-                        <button type="submit" class="btn-primary">Update Directory Profile</button>
+                        <button type="submit" class="btn-primary" id="save-profile-btn">Update Directory Profile</button>
                     </form>
+
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+                    <div style="text-align: center;">
+                        <p style="font-size: 14px; color: var(--text-light); margin-bottom: 10px;">Get booked faster. Put your direct link in your Instagram bio!</p>
+                        <button id="share-profile-btn" class="btn-primary" style="background-color: var(--text-dark); width: 100%;">🔗 Copy My Profile Link</button>
+                    </div>
                 </div>
             </div>
 
