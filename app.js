@@ -1,8 +1,8 @@
 // --- 1. IMPORT FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-// NEW: Import Firestore Database
-import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+// NEW: Added 'collection' and 'getDocs' to read from the database
+import { getFirestore, doc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 // --- 2. YOUR FIREBASE KEYS ---
 const firebaseConfig = {
@@ -17,7 +17,7 @@ const firebaseConfig = {
 // --- 3. INITIALIZE THE APP & DATABASE ---
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app); // Turns on the database
+const db = getFirestore(app);
 
 // --- 4. AUTHENTICATION LOGIC (Login Page) ---
 const authForm = document.getElementById('auth-form');
@@ -30,28 +30,23 @@ if (authForm) {
         const password = document.getElementById('password').value;
         
         createUserWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
-                window.location.href = "dashboard.html"; 
-            })
+            .then(() => { window.location.href = "dashboard.html"; })
             .catch((error) => {
                 if (error.code === 'auth/email-already-in-use') {
                     signInWithEmailAndPassword(auth, email, password)
-                        .then((userCredential) => {
-                            window.location.href = "dashboard.html"; 
-                        })
+                        .then(() => { window.location.href = "dashboard.html"; })
                         .catch((loginError) => alert("Error logging in: " + loginError.message));
                 } else {
                     alert("Error: " + error.message);
                 }
             });
-    }); // <-- This was the missing closing bracket!
+    });
 }
 
 // --- 5. DASHBOARD LOGIC (Save Profile & Logout) ---
 const profileForm = document.getElementById('profile-form');
 const logoutBtn = document.getElementById('logout-btn');
 
-// Handle Profile Saving
 if (profileForm) {
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -62,53 +57,61 @@ if (profileForm) {
             return;
         }
 
-        // Get the values the barber typed in
         const name = document.getElementById('barber-name').value;
         const shop = document.getElementById('shop-name').value;
         const city = document.getElementById('city-name').value;
         const calendlyUrl = document.getElementById('calendly-link').value;
 
         try {
-            // Save it to Firestore in a "barbers" collection, tied to their specific user ID
             await setDoc(doc(db, "barbers", user.uid), {
                 name: name,
                 shop: shop,
                 city: city,
                 calendlyUrl: calendlyUrl,
-                languages: ["English"], // We can add form inputs for these later
+                languages: ["English", "Amharic"], // Default tags for now
                 specialty: "Habesha Cuts"
             });
-            alert("Profile saved successfully to the live database!");
+            alert("Profile saved successfully to the live directory!");
         } catch (error) {
             alert("Error saving profile: " + error.message);
         }
     });
 }
 
-// Handle Logout
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-        signOut(auth).then(() => {
-            window.location.href = "login.html";
-        }).catch((error) => {
-            alert("Error signing out.");
-        });
+        signOut(auth).then(() => { window.location.href = "login.html"; })
+        .catch(() => { alert("Error signing out."); });
     });
 }
 
-// --- 6. MOCK DATABASE & HOMEPAGE LOGIC ---
-const barbers = [
-    {
-        id: 1, name: "Dawit M.", shop: "Crown Barbershop", city: "Toronto", 
-        languages: ["Amharic", "English"], specialty: "Fades & Textured Hair", 
-        calendlyUrl: "https://calendly.com/peterbenjamin858" 
-    },
-    {
-        id: 2, name: "Simon T.", shop: "Habesha Cuts Studio", city: "Calgary", 
-        languages: ["Tigrinya", "English"], specialty: "Precision Tapers", 
-        calendlyUrl: "https://calendly.com/peterbenjamin858"
+// --- 6. LIVE DATABASE & HOMEPAGE LOGIC ---
+let allBarbers = []; // We will store the live database data here
+
+// This function reaches into Firestore and grabs all the barbers
+window.loadBarbersFromDatabase = async function() {
+    const grid = document.getElementById('barber-grid');
+    if(!grid) return; 
+
+    grid.innerHTML = '<p style="text-align:center; width:100%;">Loading live directory...</p>';
+
+    try {
+        const querySnapshot = await getDocs(collection(db, "barbers"));
+        allBarbers = []; // Clear the array
+        
+        querySnapshot.forEach((doc) => {
+            // Push each barber from Google Cloud into our local array
+            allBarbers.push(doc.data());
+        });
+
+        // Now draw the cards!
+        window.renderBarbers(allBarbers);
+
+    } catch (error) {
+        console.error("Error fetching data: ", error);
+        grid.innerHTML = '<p>Error loading barbers. Please check your connection.</p>';
     }
-];
+};
 
 window.renderBarbers = function(barberList) {
     const grid = document.getElementById('barber-grid');
@@ -116,7 +119,7 @@ window.renderBarbers = function(barberList) {
     
     grid.innerHTML = ''; 
     if(barberList.length === 0) {
-        grid.innerHTML = '<p>No barbers found in this city yet.</p>';
+        grid.innerHTML = '<p>No barbers found yet. Be the first to join!</p>';
         return;
     }
 
@@ -125,11 +128,11 @@ window.renderBarbers = function(barberList) {
         card.className = 'barber-card';
         card.innerHTML = `
             <div class="barber-info">
-                <h4>${barber.name}</h4>
-                <p class="barber-shop">${barber.shop} - ${barber.city}</p>
+                <h4>${barber.name || 'Unknown Barber'}</h4>
+                <p class="barber-shop">${barber.shop || ''} - ${barber.city || ''}</p>
                 <div class="barber-tags">
-                    <span class="tag">${barber.languages.join(", ")}</span>
-                    <span class="tag">${barber.specialty}</span>
+                    <span class="tag">${barber.languages ? barber.languages.join(", ") : "English"}</span>
+                    <span class="tag">${barber.specialty || "Barber"}</span>
                 </div>
                 <button class="btn-primary book-btn" onclick="openCalendly('${barber.calendlyUrl}')">Book Now</button>
             </div>
@@ -140,17 +143,24 @@ window.renderBarbers = function(barberList) {
 
 window.filterBarbers = function() {
     const searchInput = document.getElementById('city-search').value.toLowerCase();
-    const filteredList = barbers.filter(barber => barber.city.toLowerCase().includes(searchInput));
+    const filteredList = allBarbers.filter(barber => 
+        barber.city && barber.city.toLowerCase().includes(searchInput)
+    );
     window.renderBarbers(filteredList);
 };
 
 window.openCalendly = function(url) {
+    if(!url || url === "") {
+        alert("This barber hasn't set up their booking link yet!");
+        return false;
+    }
     Calendly.initPopupWidget({ url: url });
     return false;
 };
 
+// When the homepage loads, fetch the real data!
 window.onload = () => {
     if(document.getElementById('barber-grid')) {
-        window.renderBarbers(barbers);
+        window.loadBarbersFromDatabase();
     }
 };
