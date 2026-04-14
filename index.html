@@ -39,8 +39,15 @@
             <h2>Book top independent Habesha barbers in Canada.</h2>
             <p>Skip the wait. Find specialists in your hair texture, book instantly, and secure your spot.</p>
             
-            <div class="search-bar">
-                <input type="text" id="city-search" placeholder="Enter your city (e.g., Toronto)">
+           <div class="search-bar">
+                <select id="city-search" style="width: 70%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 5px; outline: none; font-size: 14px; background-color: white;">
+                    <option value="">All Cities</option>
+                    <option value="toronto">Toronto</option>
+                    <option value="calgary">Calgary</option>
+                    <option value="vancouver">Vancouver</option>
+                    <option value="edmonton">Edmonton</option>
+                    <option value="ottawa">Ottawa</option>
+                </select>
                 <button class="btn-primary" onclick="filterBarbers()">Search</button>
             </div>
         </div>
