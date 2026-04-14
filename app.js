@@ -26,33 +26,24 @@ if (authForm) {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         
-        // For Version 1.0, we will use the Login form to CREATE accounts too, just to test it!
+        // ... inside your app.js authForm listener ...
         createUserWithEmailAndPassword(auth, email, password)
             .then((userCredential) => {
-                // Signed up successfully
-                const user = userCredential.user;
-                alert("Success! Account created for: " + user.email);
-                // Later, we will redirect them to their dashboard here
+                // Redirect newly created users to the dashboard
+                window.location.href = "dashboard.html"; 
             })
             .catch((error) => {
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                
-                // If the account already exists, try logging them in instead
-                if (errorCode === 'auth/email-already-in-use') {
+                if (error.code === 'auth/email-already-in-use') {
                     signInWithEmailAndPassword(auth, email, password)
                         .then((userCredential) => {
-                            alert("Welcome back! Logged in successfully.");
+                            // Redirect returning users to the dashboard
+                            window.location.href = "dashboard.html"; 
                         })
-                        .catch((loginError) => {
-                            alert("Error logging in: " + loginError.message);
-                        });
+                        .catch((loginError) => alert("Error logging in: " + loginError.message));
                 } else {
-                    alert("Error: " + errorMessage);
+                    alert("Error: " + error.message);
                 }
             });
-    });
-}
 
 // --- 5. MOCK DATABASE & HOMEPAGE LOGIC (From earlier) ---
 const barbers = [
