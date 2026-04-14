@@ -7,48 +7,86 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body style="background-color: var(--off-white);">
+<body style="background-color: #f4f6f8;">
 
-    <nav class="navbar">
+    <nav class="navbar" style="padding: 15px 5%; box-shadow: 0 2px 5px rgba(0,0,0,0.05); z-index: 100;">
         <div class="logo">
-            <h1>Habesha<span>Cuts</span></h1>
+            <h1>Habesha<span>Cuts</span> <span style="font-size: 14px; color: var(--text-light); font-weight: 400;">| Partner Dashboard</span></h1>
         </div>
-        <div class="nav-links">
-            <button id="logout-btn" class="btn-primary" style="background-color: var(--text-dark);">Log Out</button>
-        </div>
+        <button id="logout-btn" class="btn-primary" style="background-color: #ffebee; color: #d32f2f; border: 1px solid #d32f2f;">Log Out</button>
     </nav>
 
-    <div style="padding: 50px 5%; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: var(--text-dark); margin-bottom: 10px;">My Barber Profile</h2>
-        <p style="color: var(--text-light); margin-bottom: 30px;">Update your details to appear on the live directory.</p>
-        
-        <div style="background-color: var(--white); padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-            <form id="profile-form">
-                <div class="form-group">
-                    <label for="barber-name">Full Name</label>
-                    <input type="text" id="barber-name" placeholder="E.g. Dawit M." required>
-                </div>
+    <div class="dashboard-layout">
+        <aside class="dashboard-sidebar">
+            <ul class="sidebar-menu">
+                <li class="active" onclick="switchTab('overview')">📊 Daily Operations</li>
+                <li onclick="switchTab('settings')">⚙️ Shop Settings</li>
+                <li onclick="window.open('https://calendly.com/app/scheduled_events/user/me', '_blank')">📅 View Calendar</li>
+            </ul>
+        </aside>
+
+        <main class="dashboard-content">
+            
+            <div id="tab-overview" class="tab-content active-tab">
+                <h2 style="margin-bottom: 20px;">Welcome Back, <span id="dash-greeting">Barber</span></h2>
                 
-                <div class="form-group">
-                    <label for="shop-name">Barbershop Name</label>
-                    <input type="text" id="shop-name" placeholder="E.g. Crown Barbershop" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="city-name">City</label>
-                    <input type="text" id="city-name" placeholder="E.g. Toronto" required>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Appointments Today</h3>
+                        <p class="stat-number">6</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Estimated Revenue</h3>
+                        <p class="stat-number">$240</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Profile Views</h3>
+                        <p class="stat-number">42</p>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="calendly-link">Calendly Link</label>
-                    <input type="url" id="calendly-link" placeholder="https://calendly.com/your-username" required>
+                <div class="dashboard-card" style="margin-top: 30px;">
+                    <h3>Today's Schedule</h3>
+                    <p style="color: var(--text-light); font-size: 14px; margin-bottom: 15px;">Manage your real-time bookings via your Calendly integration.</p>
+                    <a href="https://calendly.com/app/scheduled_events/user/me" target="_blank" class="btn-primary" style="text-decoration: none;">Open Calendly Calendar</a>
                 </div>
+            </div>
+
+            <div id="tab-settings" class="tab-content" style="display: none;">
+                <h2>Shop Settings</h2>
+                <p style="color: var(--text-light); margin-bottom: 20px;">Update how you appear on the Habesha Cuts directory.</p>
                 
-                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Save Profile to Database</button>
-            </form>
-        </div>
+                <div class="dashboard-card">
+                    <form id="profile-form">
+                        <div class="form-group">
+                            <label>Calendly Booking Link</label>
+                            <input type="url" id="calendly-link" placeholder="https://calendly.com/your-username" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Shop Location / City</label>
+                            <input type="text" id="city-name" required>
+                        </div>
+                        <button type="submit" class="btn-primary">Update Directory Profile</button>
+                    </form>
+                </div>
+            </div>
+
+        </main>
     </div>
 
+    <script>
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+            // Remove active state from sidebar
+            document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById('tab-' + tabName).style.display = 'block';
+            // Find the clicked element and make it active (simple hack using event target)
+            event.currentTarget.classList.add('active');
+        }
+    </script>
     <script type="module" src="app.js"></script>
 </body>
 </html>
