@@ -19,27 +19,38 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// --- 4. AUTHENTICATION LOGIC (Login Page) ---
-const authForm = document.getElementById('auth-form');
+// --- 4. AUTHENTICATION LOGIC (Login & Signup Pages) ---
 
-if (authForm) {
-    authForm.addEventListener('submit', (e) => {
+// Logic for the LOGIN Page
+const loginForm = document.getElementById('auth-form'); // Your existing login form
+if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
         e.preventDefault(); 
-        
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         
-        createUserWithEmailAndPassword(auth, email, password)
+        // ONLY log them in
+        signInWithEmailAndPassword(auth, email, password)
             .then(() => { window.location.href = "dashboard.html"; })
-            .catch((error) => {
-                if (error.code === 'auth/email-already-in-use') {
-                    signInWithEmailAndPassword(auth, email, password)
-                        .then(() => { window.location.href = "dashboard.html"; })
-                        .catch((loginError) => alert("Error logging in: " + loginError.message));
-                } else {
-                    alert("Error: " + error.message);
-                }
-            });
+            .catch((error) => { alert("Error logging in: " + error.message); });
+    });
+}
+
+// Logic for the SIGNUP Page
+const signupForm = document.getElementById('signup-form'); // Your new signup form
+if (signupForm) {
+    signupForm.addEventListener('submit', (e) => {
+        e.preventDefault(); 
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        
+        // ONLY create an account
+        createUserWithEmailAndPassword(auth, email, password)
+            .then(() => { 
+                alert("Account created successfully! Let's set up your profile.");
+                window.location.href = "dashboard.html"; 
+            })
+            .catch((error) => { alert("Error creating account: " + error.message); });
     });
 }
 
