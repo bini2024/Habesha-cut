@@ -1,4 +1,4 @@
-// --- 1. IMPORT FIREBASE (No Storage Needed!) ---
+// --- 1. IMPORT FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, collection, getDocs, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
@@ -13,13 +13,11 @@ const firebaseConfig = {
   appId: "1:819909600217:web:bf5c14f71ed7903cdc2fc8"
 };
 
-// --- 3. INITIALIZE THE APP & SERVICES ---
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// --- THE SECRET WEAPON: Image Shrinker (Base64) ---
-// This takes a large phone photo, shrinks it, and turns it into text
+// Base64 Image Shrinker
 function compressImageToText(file) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -29,20 +27,19 @@ function compressImageToText(file) {
             img.src = event.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 250; // Shrink it down to save database space!
+                const MAX_WIDTH = 250; 
                 const scaleSize = MAX_WIDTH / img.width;
                 canvas.width = MAX_WIDTH;
                 canvas.height = img.height * scaleSize;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                // Return as a compressed JPEG text string
                 resolve(canvas.toDataURL('image/jpeg', 0.7)); 
             }
         }
     });
 }
 
-// --- 4. AUTHENTICATION LOGIC ---
+// --- 4. AUTHENTICATION ---
 const loginForm = document.getElementById('auth-form');
 if (loginForm) {
     loginForm.addEventListener('submit', (e) => {
@@ -58,7 +55,7 @@ if (signupForm) {
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault(); 
         const btn = signupForm.querySelector('button');
-        btn.innerText = "Creating Account...";
+        btn.innerText = "Creating...";
         btn.disabled = true;
 
         try {
@@ -74,7 +71,11 @@ if (signupForm) {
                 phone: document.getElementById('signup-phone').value,
                 calendlyUrl: document.getElementById('signup-calendly').value,
                 instagram: "", 
-                photoUrl: "https://via.placeholder.com/150?text=Barber", // Default placeholder
+                photoUrl: "https://via.placeholder.com/150?text=Barber",
+                address: "", // New Neighborhood field
+                startingPrice: "", // New Price field
+                status: "active", // New Status field
+                isVerified: false, // NEW: Admin control only!
                 languages: ["English"], 
                 specialty: "Habesha Cuts",
                 bookingClicks: 0,
@@ -82,7 +83,6 @@ if (signupForm) {
                 createdAt: new Date()
             });
 
-            alert("Registration successful! Welcome to Habesha Cuts.");
             window.location.href = "dashboard.html"; 
         } catch (error) {
             btn.innerText = "Complete Registration";
@@ -98,7 +98,7 @@ if (document.getElementById('logout-btn')) {
     });
 }
 
-// --- 5. DASHBOARD DATA & TEXT-IMAGE UPLOADS ---
+// --- 5. DASHBOARD ---
 if (window.location.pathname.includes("dashboard.html")) {
     onAuthStateChanged(auth, async (user) => {
         if (!user) return window.location.href = "login.html";
@@ -113,9 +113,16 @@ if (window.location.pathname.includes("dashboard.html")) {
             document.getElementById('stat-views').innerText = data.searchViews || 0;
             document.getElementById('stat-revenue').innerText = "$" + ((data.bookingClicks || 0) * 15);
             
+            // Populate form
             if(document.getElementById('calendly-link')) document.getElementById('calendly-link').value = data.calendlyUrl || "";
             if(document.getElementById('city-name')) document.getElementById('city-name').value = data.city || "";
             if(document.getElementById('insta-handle')) document.getElementById('insta-handle').value = data.instagram || "";
+            
+            // NEW: Populate new fields
+            if(document.getElementById('starting-price')) document.getElementById('starting-price').value = data.startingPrice || "";
+            if(document.getElementById('shop-address')) document.getElementById('shop-address').value = data.address || "";
+            if(document.getElementById('availability-status')) document.getElementById('availability-status').value = data.status || "active";
+            
             currentPhotoUrl = data.photoUrl || "https://via.placeholder.com/150?text=Barber";
         }
 
@@ -131,16 +138,17 @@ if (window.location.pathname.includes("dashboard.html")) {
                 const fileInput = document.getElementById('profile-pic');
 
                 try {
-                    // THE HACK: If they picked an image, compress it into text!
-                    if (fileInput.files.length > 0) {
-                        finalPhotoUrl = await compressImageToText(fileInput.files[0]);
-                    }
+                    if (fileInput.files.length > 0) finalPhotoUrl = await compressImageToText(fileInput.files[0]);
 
+                    // Update DB with new fields
                     await updateDoc(doc(db, "barbers", user.uid), {
                         calendlyUrl: document.getElementById('calendly-link').value,
                         city: document.getElementById('city-name').value,
                         instagram: document.getElementById('insta-handle').value,
-                        photoUrl: finalPhotoUrl // Saves the text-image directly to the free database!
+                        startingPrice: document.getElementById('starting-price').value,
+                        address: document.getElementById('shop-address').value,
+                        status: document.getElementById('availability-status').value,
+                        photoUrl: finalPhotoUrl 
                     });
 
                     alert("Profile updated successfully!");
@@ -158,7 +166,7 @@ if (window.location.pathname.includes("dashboard.html")) {
             shareBtn.addEventListener('click', () => {
                 const myLink = window.location.origin + window.location.pathname.replace('dashboard.html', 'index.html') + '?barber=' + user.uid;
                 navigator.clipboard.writeText(myLink).then(() => {
-                    shareBtn.innerText = "✅ Link Copied! Paste in Instagram.";
+                    shareBtn.innerText = "✅ Link Copied!";
                     setTimeout(() => shareBtn.innerText = "🔗 Copy My Profile Link", 3000);
                 });
             });
@@ -166,7 +174,7 @@ if (window.location.pathname.includes("dashboard.html")) {
     });
 }
 
-// --- 6. LIVE DIRECTORY & HOMEPAGE LOGIC ---
+// --- 6. LIVE DIRECTORY ---
 let allBarbers = []; 
 
 window.loadBarbersFromDatabase = async function() {
@@ -177,7 +185,6 @@ window.loadBarbersFromDatabase = async function() {
     try {
         const querySnapshot = await getDocs(collection(db, "barbers"));
         allBarbers = []; 
-        
         querySnapshot.forEach((doc) => {
             allBarbers.push({ id: doc.id, ...doc.data() });
             updateDoc(doc.ref, { searchViews: increment(1) }).catch(e => console.log(e));
@@ -185,14 +192,11 @@ window.loadBarbersFromDatabase = async function() {
 
         const urlParams = new URLSearchParams(window.location.search);
         const specificBarberId = urlParams.get('barber');
-
         if(specificBarberId) {
-            const specificBarber = allBarbers.filter(b => b.id === specificBarberId);
-            window.renderBarbers(specificBarber);
+            window.renderBarbers(allBarbers.filter(b => b.id === specificBarberId));
         } else {
             window.renderBarbers(allBarbers);
         }
-
     } catch (error) {
         grid.innerHTML = '<p>Error loading barbers.</p>';
     }
@@ -201,33 +205,50 @@ window.loadBarbersFromDatabase = async function() {
 window.renderBarbers = function(barberList) {
     const grid = document.getElementById('barber-grid');
     if(!grid) return; 
-    
     grid.innerHTML = ''; 
-    if(barberList.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; width:100%;">No barbers found. Try a different city.</p>';
-        return;
-    }
+    if(barberList.length === 0) return;
 
     barberList.forEach(barber => {
         const card = document.createElement('div');
         card.className = 'barber-card';
         card.style.textAlign = "center"; 
         
+        // 1. Instagram Button
         let instaButtonHTML = '';
         if(barber.instagram && barber.instagram.trim() !== "") {
             instaButtonHTML = `<a href="https://instagram.com/${barber.instagram}" target="_blank" class="btn-secondary">View Portfolio</a>`;
         }
 
+        // 2. Verified Blue Checkmark
+        let verifiedHTML = barber.isVerified ? `<span class="verified-badge" title="Verified Barber">☑️</span>` : '';
+
+        // 3. Starting Price Tag
+        let priceHTML = barber.startingPrice ? `<span class="price-tag">From $${barber.startingPrice}</span>` : '';
+
+        // 4. Google Maps Link
+        let mapQuery = encodeURIComponent(`${barber.shop} ${barber.address || ''} ${barber.city}`);
+        let locationDisplay = barber.address ? `${barber.address}, ${barber.city}` : barber.city;
+
+        // 5. Availability Status (Disables button if booked)
+        let bookingButton = `<button class="btn-primary book-btn" onclick="openCalendly('${barber.calendlyUrl}', '${barber.id}')">Book Now</button>`;
+        if (barber.status === "booked") {
+            bookingButton = `<button class="btn-primary book-btn btn-disabled" disabled>Fully Booked</button>`;
+        }
+
         card.innerHTML = `
             <img src="${barber.photoUrl || 'https://via.placeholder.com/150?text=Barber'}" alt="${barber.name}" class="barber-avatar">
             <div class="barber-info">
-                <h4 style="margin-bottom:2px;">${barber.name}</h4>
-                <p class="barber-shop">${barber.shop} - ${barber.city}</p>
+                <h4 style="margin-bottom:5px; display:flex; justify-content:center; align-items:center;">
+                    ${barber.name} ${verifiedHTML} ${priceHTML}
+                </h4>
+                
+                <a href="https://maps.google.com/?q=${mapQuery}" target="_blank" class="map-link">📍 ${barber.shop} - ${locationDisplay}</a>
+                
                 <div class="barber-tags" style="justify-content: center;">
                     <span class="tag">${barber.specialty || "Habesha Barber"}</span>
                 </div>
                 <div class="action-buttons">
-                    <button class="btn-primary" onclick="openCalendly('${barber.calendlyUrl}', '${barber.id}')">Book Now</button>
+                    ${bookingButton}
                     ${instaButtonHTML}
                 </div>
             </div>
@@ -247,11 +268,8 @@ window.filterBarbers = function() {
 };
 
 window.openCalendly = function(url, barberId) {
-    if(!url || url === "") {
-        alert("This barber hasn't set up their booking link yet!");
-        return false;
-    }
-    updateDoc(doc(db, "barbers", barberId), { bookingClicks: increment(1) }).catch(error => console.error(error));
+    if(!url || url === "") return alert("Booking link missing!");
+    updateDoc(doc(db, "barbers", barberId), { bookingClicks: increment(1) }).catch(e => console.error(e));
     Calendly.initPopupWidget({ url: url });
     return false;
 };
@@ -260,7 +278,6 @@ window.onload = () => {
     if(document.getElementById('barber-grid')) window.loadBarbersFromDatabase();
 };
 
-// Mobile Hamburger Menu
 const hamburger = document.getElementById('hamburger');
 const navLinks = document.querySelector('.nav-links');
 if (hamburger && navLinks) {
