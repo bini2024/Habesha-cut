@@ -1,8 +1,8 @@
 // --- 1. IMPORT FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-// NEW: Added 'collection' and 'getDocs' to read from the database
-import { getFirestore, doc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+// NEW: Imported getDoc, updateDoc, and increment for tracking!
+import { getFirestore, doc, setDoc, collection, getDocs, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 // --- 2. YOUR FIREBASE KEYS ---
 const firebaseConfig = {
@@ -19,139 +19,120 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// --- 4. AUTHENTICATION LOGIC (Login & Signup Pages) ---
-
-// Logic for the LOGIN Page
-const loginForm = document.getElementById('auth-form'); // Your existing login form
+// --- 4. AUTHENTICATION LOGIC (Login & Signup) ---
+const loginForm = document.getElementById('auth-form');
 if (loginForm) {
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault(); 
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         
-        // ONLY log them in
         signInWithEmailAndPassword(auth, email, password)
             .then(() => { window.location.href = "dashboard.html"; })
             .catch((error) => { alert("Error logging in: " + error.message); });
     });
 }
 
-// Logic for the SIGNUP Page (Collects all data upfront)
 const signupForm = document.getElementById('signup-form');
 if (signupForm) {
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault(); 
-        
-        // Disable button so they don't click twice
         const btn = signupForm.querySelector('button');
         btn.innerText = "Creating Account...";
         btn.disabled = true;
 
-        const email = document.getElementById('signup-email').value;
-        const password = document.getElementById('signup-password').value;
-        
-        const name = document.getElementById('signup-name').value;
-        const shop = document.getElementById('signup-shop').value;
-        const city = document.getElementById('signup-city').value;
-        const phone = document.getElementById('signup-phone').value;
-        const calendlyUrl = document.getElementById('signup-calendly').value;
-
         try {
-            // 1. Create the secure login account
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-
-            // 2. Immediately save all their business info to Firestore
-            await setDoc(doc(db, "barbers", user.uid), {
-                name: name,
-                shop: shop,
-                city: city,
-                phone: phone,
-                calendlyUrl: calendlyUrl,
+            const userCredential = await createUserWithEmailAndPassword(auth, 
+                document.getElementById('signup-email').value, 
+                document.getElementById('signup-password').value
+            );
+            
+            // Save initial data PLUS stat trackers starting at 0
+            await setDoc(doc(db, "barbers", userCredential.user.uid), {
+                name: document.getElementById('signup-name').value,
+                shop: document.getElementById('signup-shop').value,
+                city: document.getElementById('signup-city').value,
+                phone: document.getElementById('signup-phone').value,
+                calendlyUrl: document.getElementById('signup-calendly').value,
                 languages: ["English"], 
                 specialty: "Habesha Cuts",
+                bookingClicks: 0, // NEW: Start clicks at 0
+                searchViews: 0,   // NEW: Start views at 0
                 createdAt: new Date()
             });
 
-            // 3. Success message and redirect!
             alert("Registration successful! Welcome to Habesha Cuts.");
             window.location.href = "dashboard.html"; 
 
         } catch (error) {
             btn.innerText = "Complete Registration";
             btn.disabled = false;
-            alert("Error creating account: " + error.message);
+            alert("Error: " + error.message);
         }
     });
 }
 
-// --- 5. DASHBOARD LOGIC (Save Profile & Logout) ---
-const profileForm = document.getElementById('profile-form');
+// Handle Logout
 const logoutBtn = document.getElementById('logout-btn');
-
-if (profileForm) {
-    profileForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const user = auth.currentUser;
-        if (!user) {
-            alert("You must be logged in to save a profile!");
-            return;
-        }
-
-        const name = document.getElementById('barber-name').value;
-        const shop = document.getElementById('shop-name').value;
-        const city = document.getElementById('city-name').value;
-        const calendlyUrl = document.getElementById('calendly-link').value;
-
-        try {
-            await setDoc(doc(db, "barbers", user.uid), {
-                name: name,
-                shop: shop,
-                city: city,
-                calendlyUrl: calendlyUrl,
-                languages: ["English", "Amharic"], // Default tags for now
-                specialty: "Habesha Cuts"
-            });
-            alert("Profile saved successfully to the live directory!");
-        } catch (error) {
-            alert("Error saving profile: " + error.message);
-        }
-    });
-}
-
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-        signOut(auth).then(() => { window.location.href = "login.html"; })
-        .catch(() => { alert("Error signing out."); });
+        signOut(auth).then(() => { window.location.href = "login.html"; });
     });
 }
 
-// --- 6. LIVE DATABASE & HOMEPAGE LOGIC ---
-let allBarbers = []; // We will store the live database data here
+// --- 5. DASHBOARD DATA FETCHER ---
+// Automatically fetch the barber's real stats when they open the dashboard
+if (window.location.pathname.includes("dashboard.html")) {
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            const docSnap = await getDoc(doc(db, "barbers", user.uid));
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                
+                // Put their name in the greeting
+                document.getElementById('dash-greeting').innerText = data.name || "Barber";
+                
+                // Inject the real tracking numbers!
+                const clicks = data.bookingClicks || 0;
+                const views = data.searchViews || 0;
+                
+                document.getElementById('stat-clicks').innerText = clicks;
+                document.getElementById('stat-views').innerText = views;
+                
+                // Fun MVP trick: Estimate their revenue (assuming a $30 cut and 50% of clicks actually book)
+                const estimatedRevenue = clicks * 15; 
+                document.getElementById('stat-revenue').innerText = "$" + estimatedRevenue;
+            }
+        } else {
+            // Kick them out if they aren't logged in
+            window.location.href = "login.html";
+        }
+    });
+}
 
-// This function reaches into Firestore and grabs all the barbers
+// --- 6. LIVE DIRECTORY & HOMEPAGE LOGIC ---
+let allBarbers = []; 
+
 window.loadBarbersFromDatabase = async function() {
     const grid = document.getElementById('barber-grid');
     if(!grid) return; 
-
     grid.innerHTML = '<p style="text-align:center; width:100%;">Loading live directory...</p>';
 
     try {
         const querySnapshot = await getDocs(collection(db, "barbers"));
-        allBarbers = []; // Clear the array
+        allBarbers = []; 
         
         querySnapshot.forEach((doc) => {
-            // Push each barber from Google Cloud into our local array
-            allBarbers.push(doc.data());
+            // NEW: We save the specific document ID so we know WHO to track clicks for!
+            allBarbers.push({ id: doc.id, ...doc.data() });
+            
+            // Secretly increment their search views in the database (fire-and-forget)
+            updateDoc(doc.ref, { searchViews: increment(1) }).catch(e => console.log(e));
         });
 
-        // Now draw the cards!
         window.renderBarbers(allBarbers);
-
     } catch (error) {
-        console.error("Error fetching data: ", error);
-        grid.innerHTML = '<p>Error loading barbers. Please check your connection.</p>';
+        grid.innerHTML = '<p>Error loading barbers.</p>';
     }
 };
 
@@ -160,47 +141,43 @@ window.renderBarbers = function(barberList) {
     if(!grid) return; 
     
     grid.innerHTML = ''; 
-    if(barberList.length === 0) {
-        grid.innerHTML = '<p>No barbers found yet. Be the first to join!</p>';
-        return;
-    }
+    if(barberList.length === 0) return;
 
     barberList.forEach(barber => {
         const card = document.createElement('div');
         card.className = 'barber-card';
+        // Notice the button now passes the barber.id to our tracking function
         card.innerHTML = `
             <div class="barber-info">
-                <h4>${barber.name || 'Unknown Barber'}</h4>
-                <p class="barber-shop">${barber.shop || ''} - ${barber.city || ''}</p>
+                <h4>${barber.name}</h4>
+                <p class="barber-shop">${barber.shop} - ${barber.city}</p>
                 <div class="barber-tags">
-                    <span class="tag">${barber.languages ? barber.languages.join(", ") : "English"}</span>
-                    <span class="tag">${barber.specialty || "Barber"}</span>
+                    <span class="tag">Habesha Barber</span>
                 </div>
-                <button class="btn-primary book-btn" onclick="openCalendly('${barber.calendlyUrl}')">Book Now</button>
+                <button class="btn-primary book-btn" onclick="openCalendly('${barber.calendlyUrl}', '${barber.id}')">Book Now</button>
             </div>
         `;
         grid.appendChild(card);
     });
 };
 
-window.filterBarbers = function() {
-    const searchInput = document.getElementById('city-search').value.toLowerCase();
-    const filteredList = allBarbers.filter(barber => 
-        barber.city && barber.city.toLowerCase().includes(searchInput)
-    );
-    window.renderBarbers(filteredList);
-};
-
-window.openCalendly = function(url) {
+// --- THE TRACKER FUNCTION ---
+window.openCalendly = function(url, barberId) {
     if(!url || url === "") {
         alert("This barber hasn't set up their booking link yet!");
         return false;
     }
+    
+    // 1. Tell Firebase to add +1 to this specific barber's "bookingClicks"
+    updateDoc(doc(db, "barbers", barberId), { 
+        bookingClicks: increment(1) 
+    }).catch(error => console.error("Error tracking click:", error));
+
+    // 2. Open the Calendly popup
     Calendly.initPopupWidget({ url: url });
     return false;
 };
 
-// When the homepage loads, fetch the real data!
 window.onload = () => {
     if(document.getElementById('barber-grid')) {
         window.loadBarbersFromDatabase();
