@@ -1,7 +1,6 @@
 // --- 1. IMPORT FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-// NEW: Imported getDoc, updateDoc, and increment for tracking!
 import { getFirestore, doc, setDoc, collection, getDocs, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 // --- 2. YOUR FIREBASE KEYS ---
@@ -56,8 +55,8 @@ if (signupForm) {
                 calendlyUrl: document.getElementById('signup-calendly').value,
                 languages: ["English"], 
                 specialty: "Habesha Cuts",
-                bookingClicks: 0, // NEW: Start clicks at 0
-                searchViews: 0,   // NEW: Start views at 0
+                bookingClicks: 0,
+                searchViews: 0,
                 createdAt: new Date()
             });
 
@@ -81,7 +80,6 @@ if (logoutBtn) {
 }
 
 // --- 5. DASHBOARD DATA FETCHER ---
-// Automatically fetch the barber's real stats when they open the dashboard
 if (window.location.pathname.includes("dashboard.html")) {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -89,22 +87,18 @@ if (window.location.pathname.includes("dashboard.html")) {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 
-                // Put their name in the greeting
                 document.getElementById('dash-greeting').innerText = data.name || "Barber";
                 
-                // Inject the real tracking numbers!
                 const clicks = data.bookingClicks || 0;
                 const views = data.searchViews || 0;
                 
                 document.getElementById('stat-clicks').innerText = clicks;
                 document.getElementById('stat-views').innerText = views;
                 
-                // Fun MVP trick: Estimate their revenue (assuming a $30 cut and 50% of clicks actually book)
                 const estimatedRevenue = clicks * 15; 
                 document.getElementById('stat-revenue').innerText = "$" + estimatedRevenue;
             }
         } else {
-            // Kick them out if they aren't logged in
             window.location.href = "login.html";
         }
     });
@@ -123,10 +117,7 @@ window.loadBarbersFromDatabase = async function() {
         allBarbers = []; 
         
         querySnapshot.forEach((doc) => {
-            // NEW: We save the specific document ID so we know WHO to track clicks for!
             allBarbers.push({ id: doc.id, ...doc.data() });
-            
-            // Secretly increment their search views in the database (fire-and-forget)
             updateDoc(doc.ref, { searchViews: increment(1) }).catch(e => console.log(e));
         });
 
@@ -146,7 +137,6 @@ window.renderBarbers = function(barberList) {
     barberList.forEach(barber => {
         const card = document.createElement('div');
         card.className = 'barber-card';
-        // Notice the button now passes the barber.id to our tracking function
         card.innerHTML = `
             <div class="barber-info">
                 <h4>${barber.name}</h4>
@@ -168,12 +158,10 @@ window.openCalendly = function(url, barberId) {
         return false;
     }
     
-    // 1. Tell Firebase to add +1 to this specific barber's "bookingClicks"
     updateDoc(doc(db, "barbers", barberId), { 
         bookingClicks: increment(1) 
     }).catch(error => console.error("Error tracking click:", error));
 
-    // 2. Open the Calendly popup
     Calendly.initPopupWidget({ url: url });
     return false;
 };
@@ -183,3 +171,24 @@ window.onload = () => {
         window.loadBarbersFromDatabase();
     }
 };
+
+// --- 7. MOBILE HAMBURGER MENU LOGIC ---
+const hamburger = document.getElementById('hamburger');
+const navLinks = document.querySelector('.nav-links');
+
+if (hamburger && navLinks) {
+    hamburger.addEventListener('click', () => {
+        navLinks.classList.toggle('active');
+        
+        const spans = hamburger.querySelectorAll('span');
+        if (navLinks.classList.contains('active')) {
+            spans[0].style.transform = 'rotate(45deg) translate(5px, 6px)';
+            spans[1].style.opacity = '0';
+            spans[2].style.transform = 'rotate(-45deg) translate(5px, -6px)';
+        } else {
+            spans[0].style.transform = 'none';
+            spans[1].style.opacity = '1';
+            spans[2].style.transform = 'none';
+        }
+    });
+}
