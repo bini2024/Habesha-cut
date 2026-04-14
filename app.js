@@ -36,21 +36,52 @@ if (loginForm) {
     });
 }
 
-// Logic for the SIGNUP Page
-const signupForm = document.getElementById('signup-form'); // Your new signup form
+// Logic for the SIGNUP Page (Collects all data upfront)
+const signupForm = document.getElementById('signup-form');
 if (signupForm) {
-    signupForm.addEventListener('submit', (e) => {
+    signupForm.addEventListener('submit', async (e) => {
         e.preventDefault(); 
+        
+        // Disable button so they don't click twice
+        const btn = signupForm.querySelector('button');
+        btn.innerText = "Creating Account...";
+        btn.disabled = true;
+
         const email = document.getElementById('signup-email').value;
         const password = document.getElementById('signup-password').value;
         
-        // ONLY create an account
-        createUserWithEmailAndPassword(auth, email, password)
-            .then(() => { 
-                alert("Account created successfully! Let's set up your profile.");
-                window.location.href = "dashboard.html"; 
-            })
-            .catch((error) => { alert("Error creating account: " + error.message); });
+        const name = document.getElementById('signup-name').value;
+        const shop = document.getElementById('signup-shop').value;
+        const city = document.getElementById('signup-city').value;
+        const phone = document.getElementById('signup-phone').value;
+        const calendlyUrl = document.getElementById('signup-calendly').value;
+
+        try {
+            // 1. Create the secure login account
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // 2. Immediately save all their business info to Firestore
+            await setDoc(doc(db, "barbers", user.uid), {
+                name: name,
+                shop: shop,
+                city: city,
+                phone: phone,
+                calendlyUrl: calendlyUrl,
+                languages: ["English"], 
+                specialty: "Habesha Cuts",
+                createdAt: new Date()
+            });
+
+            // 3. Success message and redirect!
+            alert("Registration successful! Welcome to Habesha Cuts.");
+            window.location.href = "dashboard.html"; 
+
+        } catch (error) {
+            btn.innerText = "Complete Registration";
+            btn.disabled = false;
+            alert("Error creating account: " + error.message);
+        }
     });
 }
 
