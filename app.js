@@ -111,7 +111,7 @@ if (window.location.pathname.includes("dashboard.html")) {
             document.getElementById('dash-greeting').innerText = data.name || "Barber";
             document.getElementById('stat-clicks').innerText = data.bookingClicks || 0;
             document.getElementById('stat-views').innerText = data.searchViews || 0;
-            document.getElementById('stat-revenue').innerText = "$" + ((data.bookingClicks || 0) * 15);
+            document.getElementById('stat-revenue').innerText = "$" + ((data.bookingClicks || 0) * 30);
             
             // Populate form
             if(document.getElementById('calendly-link')) document.getElementById('calendly-link').value = data.calendlyUrl || "";
