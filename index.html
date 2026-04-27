@@ -5,12 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Habesha Cuts | Find Your Perfect Barber</title>
     <link rel="icon" type="image/png" href="favicon.png">
-    
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
     <link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet">
     <script src="https://assets.calendly.com/assets/external/widget.js" type="text/javascript" async></script>
-    
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -21,7 +18,7 @@
                 <h1>Habesha<span>Cuts</span></h1>
             </a>
         </div>
-        
+
         <div class="hamburger" id="hamburger">
             <span></span>
             <span></span>
@@ -39,73 +36,74 @@
         <div class="hero-content">
             <h2>Book top independent Habesha barbers in Canada.</h2>
             <p>Skip the wait. Find specialists in your hair texture, book instantly, and secure your spot.</p>
-            
-           <div class="search-bar">
-    <select id="city-search" style="width: 70%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 5px; outline: none; font-size: 14px; background-color: white;">
-        <option value="">All Cities</option>
 
-        <optgroup label="Ontario">
-            <option value="toronto">Toronto</option>
-            <option value="ottawa">Ottawa</option>
-            <option value="mississauga">Mississauga</option>
-            <option value="brampton">Brampton</option>
-            <option value="hamilton">Hamilton</option>
-            <option value="london">London</option>
-            <option value="windsor">Windsor</option>
-            <option value="kitchener">Kitchener</option>
-            <option value="waterloo">Waterloo</option>
-            <option value="niagara falls">Niagara Falls</option>
-        </optgroup>
+            <!-- FIXED: Removed inline styles from select, handled in CSS -->
+            <div class="search-bar">
+                <select id="city-search">
+                    <option value="">All Cities</option>
 
-        <optgroup label="Alberta">
-            <option value="calgary">Calgary</option>
-            <option value="edmonton">Edmonton</option>
-            <option value="red deer">Red Deer</option>
-            <option value="lethbridge">Lethbridge</option>
-        </optgroup>
+                    <optgroup label="Ontario">
+                        <option value="toronto">Toronto</option>
+                        <option value="ottawa">Ottawa</option>
+                        <option value="mississauga">Mississauga</option>
+                        <option value="brampton">Brampton</option>
+                        <option value="hamilton">Hamilton</option>
+                        <option value="london">London</option>
+                        <option value="windsor">Windsor</option>
+                        <option value="kitchener">Kitchener</option>
+                        <option value="waterloo">Waterloo</option>
+                        <option value="niagara falls">Niagara Falls</option>
+                    </optgroup>
 
-        <optgroup label="British Columbia">
-            <option value="vancouver">Vancouver</option>
-            <option value="surrey">Surrey</option>
-            <option value="burnaby">Burnaby</option>
-            <option value="richmond">Richmond</option>
-            <option value="kelowna">Kelowna</option>
-            <option value="victoria">Victoria</option>
-        </optgroup>
+                    <optgroup label="Alberta">
+                        <option value="calgary">Calgary</option>
+                        <option value="edmonton">Edmonton</option>
+                        <option value="red deer">Red Deer</option>
+                        <option value="lethbridge">Lethbridge</option>
+                    </optgroup>
 
-        <optgroup label="Quebec">
-            <option value="montreal">Montreal</option>
-            <option value="quebec city">Quebec City</option>
-            <option value="laval">Laval</option>
-            <option value="gatineau">Gatineau</option>
-            <option value="sherbrooke">Sherbrooke</option>
-        </optgroup>
+                    <optgroup label="British Columbia">
+                        <option value="vancouver">Vancouver</option>
+                        <option value="surrey">Surrey</option>
+                        <option value="burnaby">Burnaby</option>
+                        <option value="richmond">Richmond</option>
+                        <option value="kelowna">Kelowna</option>
+                        <option value="victoria">Victoria</option>
+                    </optgroup>
 
-        <optgroup label="Manitoba">
-            <option value="winnipeg">Winnipeg</option>
-        </optgroup>
+                    <optgroup label="Quebec">
+                        <option value="montreal">Montreal</option>
+                        <option value="quebec city">Quebec City</option>
+                        <option value="laval">Laval</option>
+                        <option value="gatineau">Gatineau</option>
+                        <option value="sherbrooke">Sherbrooke</option>
+                    </optgroup>
 
-        <optgroup label="Saskatchewan">
-            <option value="saskatoon">Saskatoon</option>
-            <option value="regina">Regina</option>
-        </optgroup>
+                    <optgroup label="Manitoba">
+                        <option value="winnipeg">Winnipeg</option>
+                    </optgroup>
 
-        <optgroup label="Nova Scotia">
-            <option value="halifax">Halifax</option>
-        </optgroup>
+                    <optgroup label="Saskatchewan">
+                        <option value="saskatoon">Saskatoon</option>
+                        <option value="regina">Regina</option>
+                    </optgroup>
 
-        <optgroup label="New Brunswick">
-            <option value="moncton">Moncton</option>
-            <option value="saint john">Saint John</option>
-            <option value="fredericton">Fredericton</option>
-        </optgroup>
+                    <optgroup label="Nova Scotia">
+                        <option value="halifax">Halifax</option>
+                    </optgroup>
 
-        <optgroup label="Newfoundland & Labrador">
-            <option value="st johns">St. John's</option>
-        </optgroup>
-    </select>
-    <button class="btn-primary" onclick="filterBarbers()">Search</button>
-</div>
+                    <optgroup label="New Brunswick">
+                        <option value="moncton">Moncton</option>
+                        <option value="saint john">Saint John</option>
+                        <option value="fredericton">Fredericton</option>
+                    </optgroup>
+
+                    <optgroup label="Newfoundland & Labrador">
+                        <option value="st johns">St. John's</option>
+                    </optgroup>
+                </select>
+                <button class="btn-primary" onclick="filterBarbers()">Search</button>
+            </div>
         </div>
     </header>
 
@@ -114,9 +112,7 @@
             <h3>Featured Barbers</h3>
             <p>Discover top-rated talent near you.</p>
         </div>
-        
-        <div class="barber-grid" id="barber-grid">
-            </div>
+        <div class="barber-grid" id="barber-grid"></div>
     </section>
 
     <footer>
