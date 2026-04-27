@@ -113,17 +113,13 @@
     </div>
 
     <script>
-        function switchTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
-            // Remove active state from sidebar
-            document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
-            
-            // Show selected tab
-            document.getElementById('tab-' + tabName).style.display = 'block';
-            // Find the clicked element and make it active (simple hack using event target)
-            event.currentTarget.classList.add('active');
-        }
+       function switchTab(tabName, el) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+    document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
+    
+    document.getElementById('tab-' + tabName).style.display = 'block';
+    el.classList.add('active');
+}
     </script>
     <script type="module" src="app.js"></script>
 </body>
