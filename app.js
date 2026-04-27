@@ -278,6 +278,12 @@ window.filterBarbers = function() {
 
 window.openCalendly = function(url, barberId) {
     if(!url || url === "") return alert("Booking link missing!");
+    
+    // Security check — only allow real Calendly links
+    if(!url.startsWith("https://calendly.com/")) {
+        return alert("Invalid booking link. Please contact the barber directly.");
+    }
+
     updateDoc(doc(db, "barbers", barberId), { bookingClicks: increment(1) }).catch(e => console.error(e));
     Calendly.initPopupWidget({ url: url });
     return false;
