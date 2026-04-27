@@ -206,7 +206,16 @@ window.renderBarbers = function(barberList) {
     const grid = document.getElementById('barber-grid');
     if(!grid) return; 
     grid.innerHTML = ''; 
-    if(barberList.length === 0) return;
+   if(barberList.length === 0) {
+    grid.innerHTML = `
+        <div style="text-align: center; width: 100%; padding: 60px 20px;">
+            <p style="font-size: 40px; margin-bottom: 15px;">✂️</p>
+            <h3 style="color: var(--text-dark); margin-bottom: 10px;">No barbers found in this city yet.</h3>
+            <p style="color: var(--text-light); font-size: 14px;">We're growing fast! Try another city or check back soon.</p>
+        </div>
+    `;
+    return;
+}
 
     barberList.forEach(barber => {
         const card = document.createElement('div');
