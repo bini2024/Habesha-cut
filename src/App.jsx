@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+// Add collection and addDoc right here 👇
+import { doc, setDoc, getDoc, collection, addDoc, getDocs, query, where, updateDoc } from "firebase/firestore"; 
+import { auth, db } from "./firebase";
 
 // ─── THEME ────────────────────────────────────────────────────────────────────
 const C = {
@@ -300,10 +304,39 @@ function Nav({ page, setPage, user, setUser }) {
 
 function HomePage({ setPage, setSelectedBarber }) {
   const [city, setCity] = useState("");
-  const [filtered, setFiltered] = useState(BARBERS);
+  // We start with an empty array instead of the hardcoded BARBERS
+  const [allBarbers, setAllBarbers] = useState([]); 
+  const [filtered, setFiltered] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // --- NEW FIREBASE FETCHING LOGIC ---
+  useEffect(() => {
+    const fetchBarbers = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "barbers"));
+        const barbersList = [];
+        
+        querySnapshot.forEach((doc) => {
+          // Push each database document into our array, and grab the document ID
+          barbersList.push({ id: doc.id, ...doc.data() });
+        });
+
+        setAllBarbers(barbersList);
+        setFiltered(barbersList); // Initially show all barbers
+      } catch (error) {
+        console.error("Error fetching barbers: ", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBarbers();
+  }, []); // The empty array ensures this only runs once when the page loads
+  // -----------------------------------
+
+  // Update the search function to filter our new 'allBarbers' list
   const search = () => {
-    setFiltered(city ? BARBERS.filter(b => b.city === city) : BARBERS);
+    setFiltered(city ? allBarbers.filter(b => b.city.toLowerCase() === city.toLowerCase()) : allBarbers);
   };
 
   return (
@@ -336,15 +369,10 @@ function HomePage({ setPage, setSelectedBarber }) {
             </select>
             <button className="search-cta" onClick={search}>Search</button>
           </div>
-          <div className="hero-stats">
-            <div className="hero-stat"><span>120+</span><span>Verified Barbers</span></div>
-            <div className="hero-stat"><span>18</span><span>Cities</span></div>
-            <div className="hero-stat"><span>4,800+</span><span>Bookings Made</span></div>
-          </div>
         </div>
       </header>
 
-      <section className="section" style={{background: C.white}}>
+      <section className="section" style={{background: "#fff"}}>
         <div className="section-label">How it works</div>
         <div className="section-title serif">Simple. Fast. Effortless.</div>
         <div className="how-grid">
@@ -367,40 +395,52 @@ function HomePage({ setPage, setSelectedBarber }) {
         <div className="section-label">Featured Barbers</div>
         <div className="section-title serif">Top-rated talent near you.</div>
         <div className="section-sub">Discover specialists who know your hair.</div>
-        <div className="grid-3">
-          {filtered.map(b => (
-            <div className="bcard" key={b.id}>
-              <div className="bcard-top">
-                <div className="avatar">{getInitials(b.name)}</div>
-                <div>
-                  <div className="bcard-name">{b.name}
-                    {b.rating >= 4.9 && <span style={{color:C.gold, fontSize:13, marginLeft:6}}>✓</span>}
+        
+        {loading ? (
+          <div style={{textAlign:"center", padding:"40px"}}>Loading barbers...</div>
+        ) : (
+          <div className="grid-3">
+            {filtered.map(b => (
+              <div className="bcard" key={b.id}>
+                <div className="bcard-top">
+                  <div className="avatar">{getInitials(b.name || "Barber")}</div>
+                  <div>
+                    <div className="bcard-name">{b.name}
+                      {b.rating >= 4.9 && <span style={{color:"#f5c518", fontSize:13, marginLeft:6}}>✓</span>}
+                    </div>
+                    <div className="bcard-shop">{b.shop}</div>
+                    {b.available === false && <span style={{background:"rgba(231,76,60,0.2)",color:"#ff8b80",padding:"3px 8px",borderRadius:50,fontSize:11,fontWeight:700,marginTop:6,display:"inline-block"}}>FULLY BOOKED</span>}
                   </div>
-                  <div className="bcard-shop">{b.shop}</div>
-                  {!b.available && <span style={{background:"rgba(231,76,60,0.2)",color:"#ff8b80",padding:"3px 8px",borderRadius:50,fontSize:11,fontWeight:700,marginTop:6,display:"inline-block"}}>FULLY BOOKED</span>}
+                </div>
+                <div className="bcard-body">
+                  <div className="bcard-loc">📍 {b.city ? b.city.charAt(0).toUpperCase()+b.city.slice(1) : "Unknown"}, Canada</div>
+                  
+                  <div className="tags">
+                    {/* Fallback array in case you didn't add tags to the database yet */}
+                    {(b.tags || ["Fade", "Lineup"]).map(t => <span className="tag" key={t}>{t}</span>)}
+                  </div>
+                  
+                  <div className="bcard-meta">
+                    <StarRating r={b.rating || 5} /> <small style={{color:"#888", fontSize:12}}>({b.reviews || 0})</small>
+                    <span className="price">from ${b.price || 30}</span>
+                  </div>
+                  
+                  <button
+                    className="book-btn"
+                    disabled={b.available === false}
+                    style={b.available === false ? {background:"#ccc",cursor:"not-allowed"} : {}}
+                    onClick={() => { if(b.available !== false) { setSelectedBarber(b); setPage("booking"); }}}
+                  >
+                    {b.available !== false ? "Book Appointment" : "Fully Booked"}
+                  </button>
                 </div>
               </div>
-              <div className="bcard-body">
-                <div className="bcard-loc">📍 {b.city.charAt(0).toUpperCase()+b.city.slice(1)}, Canada</div>
-                <div className="tags">{b.tags.map(t => <span className="tag" key={t}>{t}</span>)}</div>
-                <div className="bcard-meta">
-                  <StarRating r={b.rating} /> <small style={{color:C.textLight, fontSize:12}}>({b.reviews})</small>
-                  <span className="price">from ${b.price}</span>
-                </div>
-                <button
-                  className="book-btn"
-                  disabled={!b.available}
-                  style={!b.available ? {background:"#ccc",cursor:"not-allowed"} : {}}
-                  onClick={() => { if(b.available) { setSelectedBarber(b); setPage("booking"); }}}
-                >
-                  {b.available ? "Book Appointment" : "Fully Booked"}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-        {filtered.length === 0 && (
-          <div style={{textAlign:"center",padding:"60px 20px",color:C.textLight}}>
+            ))}
+          </div>
+        )}
+
+        {!loading && filtered.length === 0 && (
+          <div style={{textAlign:"center",padding:"60px 20px",color:"#888"}}>
             <div style={{fontSize:40,marginBottom:16}}>🔍</div>
             <p>No barbers found in that city yet. More coming soon!</p>
           </div>
@@ -464,11 +504,65 @@ function AuthPage({ setUser, setPage }) {
 
   const update = (k, v) => setForm(f => ({...f, [k]:v}));
 
-  const submit = () => {
+  const submit = async () => {
+    setErr(""); 
+
     if (!form.email || !form.password) { setErr("Please fill all required fields."); return; }
     if (mode === "signup" && !form.name) { setErr("Please enter your name."); return; }
-    setUser({ name: form.name || "Guest", email: form.email, role, shop: form.shop, city: form.city });
-    setPage("dashboard");
+
+    try {
+      let finalUserData = {}; // Create a variable to hold the real user data
+
+      if (mode === "signup") {
+        // 1. Create the user
+        const userCred = await createUserWithEmailAndPassword(auth, form.email, form.password);
+        
+        // 2. Set their data
+        finalUserData = {
+          name: form.name,
+          email: form.email,
+          role: role,
+          shop: role === "barber" ? form.shop : "",
+          city: role === "barber" ? form.city : "",
+          createdAt: new Date()
+        };
+
+        // 3. Save to database
+        await setDoc(doc(db, "users", userCred.user.uid), finalUserData);
+
+        if (role === "barber") {
+          await setDoc(doc(db, "barbers", userCred.user.uid), {
+            name: form.name,
+            shop: form.shop,
+            city: form.city,
+            rating: 5.0,        
+            reviews: 0,
+            price: 30,          
+            available: true,
+            tags: ["Fade", "Lineup"] 
+          });
+        }
+      } else {
+        // --- THE FIX: LOGGING IN ---
+        const userCred = await signInWithEmailAndPassword(auth, form.email, form.password);
+        
+        // Fetch their REAL profile from the database
+        const userDoc = await getDoc(doc(db, "users", userCred.user.uid));
+        
+        if (userDoc.exists()) {
+          finalUserData = userDoc.data(); // Grab their actual role, name, and shop!
+        } else {
+          finalUserData = { name: "User", email: form.email, role: "client" };
+        }
+      }
+
+      // 4. Send the REAL data to the dashboard
+      setUser(finalUserData);
+      setPage("dashboard");
+
+    } catch (error) {
+      setErr(error.message.replace("Firebase: ", "")); 
+    }
   };
 
   return (
@@ -515,7 +609,7 @@ function AuthPage({ setUser, setPage }) {
           </>
         )}
 
-        {err && <p style={{color:C.red,fontSize:13,marginBottom:12}}>{err}</p>}
+        {err && <p style={{color: "red", fontSize: 13, marginBottom: 12}}>{err}</p>}
 
         <button className="submit-btn" onClick={submit}>
           {mode === "login" ? "Sign In" : "Create Account"}
@@ -541,9 +635,46 @@ function BookingPage({ barber, user, setPage, setToast }) {
   const today = new Date(2026, 4, 22);
   const [viewMonth, setViewMonth] = useState({ y: 2026, m: 4 });
 
-  const takenSlots = ["09:00", "10:30", "14:00"];
+  // 1. KEEP this line! Your UI needs it to draw the time grid.
   const slots = ["09:00","09:30","10:00","10:30","11:00","11:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00"];
 
+  // 2. Replace the old hardcoded takenSlots with this state:
+  const [takenSlots, setTakenSlots] = useState([]);
+
+  // 3. Paste the Firebase logic right below it
+  useEffect(() => {
+    // Only search the database if a date is actually selected
+    if (!date || !barber) return;
+
+    const fetchTakenSlots = async () => {
+      const selectedDateString = `${MONTHS[viewMonth.m]} ${date}, 2026`;
+      
+      try {
+        // Find bookings for THIS barber on THIS exact date
+        const q = query(
+          collection(db, "bookings"), 
+          where("barberName", "==", barber.name),
+          where("date", "==", selectedDateString)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        const bookedTimes = [];
+        
+        querySnapshot.forEach((doc) => {
+          // If the booking isn't cancelled, that time slot is taken!
+          if (doc.data().status !== "cancelled") {
+            bookedTimes.push(doc.data().time);
+          }
+        });
+
+        setTakenSlots(bookedTimes);
+      } catch (error) {
+        console.error("Error fetching slots:", error);
+      }
+    };
+
+    fetchTakenSlots();
+  }, [date, viewMonth, barber]);
   const buildCal = (y, m) => {
     const first = new Date(y, m, 1).getDay();
     const days = new Date(y, m+1, 0).getDate();
@@ -560,10 +691,37 @@ function BookingPage({ barber, user, setPage, setToast }) {
     return dt < today;
   };
 
-  const confirm = () => {
-    setConfirmed(true);
-    setToast("Appointment booked! 🎉");
+  // --- NEW FIREBASE CONFIRM FUNCTION ---
+  const confirm = async () => {
+    try {
+      // 1. Save the booking data to Firestore
+      await addDoc(collection(db, "bookings"), {
+        // Use the Firebase auth ID if logged in, otherwise mark as Guest
+        clientId: auth.currentUser ? auth.currentUser.uid : "Guest",
+        clientName: user ? user.name : "Guest",
+        barberId: barber.id || barber.name, 
+        barberName: barber.name,
+        shop: barber.shop,
+        service: service.name,
+        duration: service.duration,
+        date: `${MONTHS[viewMonth.m]} ${date}, 2026`,
+        time: time,
+        price: service.price,
+        note: note,
+        status: "pending", // Can be updated by barber later (e.g., "completed", "cancelled")
+        createdAt: new Date()
+      });
+
+      // 2. If successful, trigger your existing success UI
+      setConfirmed(true);
+      setToast("Appointment booked! 🎉");
+      
+    } catch (error) {
+      console.error("Error booking appointment: ", error);
+      setToast("Error booking: " + error.message);
+    }
   };
+  // -------------------------------------
 
   if (confirmed) return (
     <div className="booking-wrap">
@@ -715,56 +873,102 @@ function BookingPage({ barber, user, setPage, setToast }) {
 
 function ClientDashboard({ user }) {
   const [tab, setTab] = useState("upcoming");
-  const appts = [
-    { id:1, barber:"Yohannes T.", shop:"Crown & Fade Studio", service:"Skin Fade", date:"May 28, 2026", time:"11:00 AM", status:"confirmed", price:40 },
-    { id:2, barber:"Henok B.", shop:"The Royal Chair", service:"Cut + Beard Combo", date:"June 4, 2026", time:"2:00 PM", status:"pending", price:55 },
-    { id:3, barber:"Solomon G.", shop:"Addis Barber Lounge", service:"Classic Haircut", date:"Apr 15, 2026", time:"10:00 AM", status:"confirmed", price:30 },
-  ];
-  const upcoming = appts.filter(a => a.status !== "cancelled" && a.id < 3);
-  const past = appts.filter(a => a.id === 3);
+  const [appts, setAppts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // --- NEW FIREBASE LOGIC ---
+  useEffect(() => {
+    const fetchMyBookings = async () => {
+      // Make sure the user is fully logged in before querying
+      if (!auth.currentUser) return; 
+
+      try {
+        // Query bookings where the clientId matches the logged-in user's UID
+        const q = query(collection(db, "bookings"), where("clientId", "==", auth.currentUser.uid));
+        const querySnapshot = await getDocs(q);
+        
+        const fetchedAppts = [];
+        querySnapshot.forEach((doc) => {
+          fetchedAppts.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Sort by newest first (optional, but good UX)
+        fetchedAppts.sort((a, b) => b.createdAt - a.createdAt);
+        setAppts(fetchedAppts);
+      } catch (error) {
+        console.error("Error fetching my bookings:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMyBookings();
+  }, []);
+
+  // --- DYNAMIC CALCULATIONS ---
+  // Split the live data into upcoming vs past based on status
+  const upcoming = appts.filter(a => a.status === "pending" || a.status === "confirmed");
+  const past = appts.filter(a => a.status === "completed" || a.status === "cancelled");
+
+  // Calculate total spent only on confirmed/completed cuts
+  const totalSpent = appts
+    .filter(a => a.status === "confirmed" || a.status === "completed")
+    .reduce((sum, a) => sum + Number(a.price || 0), 0);
+
+  // Quick logic to find their most recent barber
+  const favBarber = appts.length > 0 ? appts[0].barberName : "-";
 
   return (
     <div className="dash-main">
       <div className="dash-title serif">My Appointments</div>
       <div className="dash-sub">Welcome back, {user.name}.</div>
 
-      <div className="stats-row">
-        <div className="stat-card"><div className="stat-label">Total Bookings</div><div className="stat-num">3</div></div>
-        <div className="stat-card"><div className="stat-label">Upcoming</div><div className="stat-num">2</div></div>
-        <div className="stat-card"><div className="stat-label">Total Spent</div><div className="stat-num">$125</div></div>
-        <div className="stat-card"><div className="stat-label">Fav Barber</div><div className="stat-num" style={{fontSize:16,paddingTop:8}}>Yohannes T.</div></div>
-      </div>
+      {loading ? (
+        <p style={{padding: "20px 0"}}>Loading your history...</p>
+      ) : (
+        <>
+          <div className="stats-row">
+            <div className="stat-card"><div className="stat-label">Total Bookings</div><div className="stat-num">{appts.length}</div></div>
+            <div className="stat-card"><div className="stat-label">Upcoming</div><div className="stat-num">{upcoming.length}</div></div>
+            <div className="stat-card"><div className="stat-label">Total Spent</div><div className="stat-num">${totalSpent}</div></div>
+            <div className="stat-card"><div className="stat-label">Recent Barber</div><div className="stat-num" style={{fontSize:16,paddingTop:8}}>{favBarber}</div></div>
+          </div>
 
-      <div className="tabs2" style={{maxWidth:280,marginBottom:24}}>
-        <button className={`tab2 ${tab==="upcoming"?"active":""}`} onClick={() => setTab("upcoming")}>Upcoming</button>
-        <button className={`tab2 ${tab==="past"?"active":""}`} onClick={() => setTab("past")}>Past</button>
-      </div>
+          <div className="tabs2" style={{maxWidth:280,marginBottom:24}}>
+            <button className={`tab2 ${tab==="upcoming"?"active":""}`} onClick={() => setTab("upcoming")}>Upcoming</button>
+            <button className={`tab2 ${tab==="past"?"active":""}`} onClick={() => setTab("past")}>Past</button>
+          </div>
 
-      <div style={{overflowX:"auto"}}>
-        <table className="appt-table">
-          <thead><tr>
-            <th>Barber</th><th>Service</th><th>Date</th><th>Time</th><th>Price</th><th>Status</th>
-          </tr></thead>
-          <tbody>
-            {(tab==="upcoming" ? upcoming : past).map(a => (
-              <tr key={a.id}>
-                <td><strong>{a.barber}</strong><br/><span style={{color:C.textLight,fontSize:12}}>{a.shop}</span></td>
-                <td>{a.service}</td>
-                <td>{a.date}</td>
-                <td>{a.time}</td>
-                <td><strong>${a.price}</strong></td>
-                <td><span className={`status-badge status-${a.status}`}>{a.status}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          <div style={{overflowX:"auto"}}>
+            <table className="appt-table">
+              <thead><tr>
+                <th>Barber</th><th>Service</th><th>Date</th><th>Time</th><th>Price</th><th>Status</th>
+              </tr></thead>
+              <tbody>
+                {(tab==="upcoming" ? upcoming : past).length === 0 ? (
+                  <tr><td colSpan="6" style={{textAlign:"center", padding:"20px"}}>No {tab} appointments.</td></tr>
+                ) : (
+                  (tab==="upcoming" ? upcoming : past).map(a => (
+                    <tr key={a.id}>
+                      <td><strong>{a.barberName}</strong><br/><span style={{color:"#888",fontSize:12}}>{a.shop}</span></td>
+                      <td>{a.service}</td>
+                      <td>{a.date}</td>
+                      <td>{a.time}</td>
+                      <td><strong>${a.price}</strong></td>
+                      <td><span className={`status-badge status-${a.status}`}>{a.status}</span></td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-function BarberDashboard({ user }) {
-  const [tab, setTab] = useState("overview");
+function BarberDashboard({ user, tab, setTab }) {
   const [availability, setAvailability] = useState([
     { day:"Monday", open:true, start:"09:00", end:"18:00" },
     { day:"Tuesday", open:true, start:"09:00", end:"18:00" },
@@ -775,20 +979,60 @@ function BarberDashboard({ user }) {
     { day:"Sunday", open:false, start:"10:00", end:"15:00" },
   ]);
 
-  const appts = [
-    { id:1, client:"Mikias A.", service:"Skin Fade", date:"May 22, 2026", time:"10:00 AM", status:"confirmed", price:40 },
-    { id:2, client:"Bereket H.", service:"Cut + Beard", date:"May 22, 2026", time:"11:30 AM", status:"confirmed", price:55 },
-    { id:3, client:"Tsegay M.", service:"Classic Haircut", date:"May 23, 2026", time:"2:00 PM", status:"pending", price:30 },
-    { id:4, client:"Dawit K.", service:"Hair Design", date:"May 24, 2026", time:"3:00 PM", status:"confirmed", price:60 },
-  ];
+  const [appts, setAppts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const toggleDay = (i) => {
-    setAvailability(a => a.map((d,idx) => idx===i ? {...d,open:!d.open} : d));
+  // 1. Fetch bookings for this specific barber
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const q = query(collection(db, "bookings"), where("barberName", "==", user.name));
+        const querySnapshot = await getDocs(q);
+        
+        const fetchedAppts = [];
+        querySnapshot.forEach((doc) => {
+          fetchedAppts.push({ id: doc.id, ...doc.data() });
+        });
+
+        setAppts(fetchedAppts);
+      } catch (error) {
+        console.error("Error fetching bookings:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user && user.name) {
+      fetchBookings();
+    }
+  }, [user]);
+
+  // 2. Function to accept an appointment
+  const acceptAppointment = async (apptId) => {
+    try {
+      await updateDoc(doc(db, "bookings", apptId), { status: "confirmed" });
+      setAppts(appts.map(a => a.id === apptId ? { ...a, status: "confirmed" } : a));
+    } catch (error) {
+      console.error("Error confirming appointment:", error);
+      alert("Failed to confirm appointment.");
+    }
+  };
+  
+  // 3. Function to save availability settings to Firebase
+  const saveAvailability = async () => {
+    try {
+      await updateDoc(doc(db, "barbers", auth.currentUser.uid), {
+        availability: availability
+      });
+      alert("Settings successfully saved! 💾");
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      alert("Error saving settings.");
+    }
   };
 
-  const updateTime = (i, field, val) => {
-    setAvailability(a => a.map((d,idx) => idx===i ? {...d,[field]:val} : d));
-  };
+  const toggleDay = (i) => setAvailability(a => a.map((d,idx) => idx===i ? {...d,open:!d.open} : d));
+  const updateTime = (i, field, val) => setAvailability(a => a.map((d,idx) => idx===i ? {...d,[field]:val} : d));
 
   return (
     <div className="dash-main">
@@ -801,67 +1045,83 @@ function BarberDashboard({ user }) {
         ))}
       </div>
 
-      {tab === "overview" && (
+      {loading ? (
+        <p style={{padding: "20px 0"}}>Loading your dashboard...</p>
+      ) : (
         <>
-          <div className="stats-row">
-            <div className="stat-card"><div className="stat-label">Today's Bookings</div><div className="stat-num">2</div><div className="stat-change">↑ vs yesterday</div></div>
-            <div className="stat-card"><div className="stat-label">This Week</div><div className="stat-num">9</div><div className="stat-change">+3 vs last week</div></div>
-            <div className="stat-card"><div className="stat-label">Monthly Revenue</div><div className="stat-num">$810</div><div className="stat-change">↑ 12% vs last month</div></div>
-            <div className="stat-card"><div className="stat-label">Avg Rating</div><div className="stat-num">4.9 ⭐</div></div>
-          </div>
-          <h4 style={{marginBottom:16,color:C.textMid,fontSize:15}}>Today's Schedule</h4>
-          <div style={{overflowX:"auto"}}>
-            <table className="appt-table">
-              <thead><tr><th>Client</th><th>Service</th><th>Time</th><th>Price</th><th>Status</th></tr></thead>
-              <tbody>
-                {appts.slice(0,2).map(a => (
-                  <tr key={a.id}>
-                    <td><strong>{a.client}</strong></td>
-                    <td>{a.service}</td>
-                    <td>{a.time}</td>
-                    <td>${a.price}</td>
-                    <td><span className={`status-badge status-${a.status}`}>{a.status}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
+          {tab === "overview" && (
+            <>
+              <div className="stats-row">
+                <div className="stat-card"><div className="stat-label">Total Bookings</div><div className="stat-num">{appts.length}</div><div className="stat-change">All time</div></div>
+                <div className="stat-card"><div className="stat-label">Pending</div><div className="stat-num">{appts.filter(a => a.status === "pending").length}</div><div className="stat-change">Needs review</div></div>
+                <div className="stat-card"><div className="stat-label">Confirmed Revenue</div><div className="stat-num">${appts.filter(a => a.status === "confirmed").reduce((sum, a) => sum + Number(a.price || 0), 0)}</div><div className="stat-change">Estimated</div></div>
+                <div className="stat-card"><div className="stat-label">Avg Rating</div><div className="stat-num">4.9 ⭐</div></div>
+              </div>
+              <h4 style={{marginBottom:16,color:"#666",fontSize:15}}>Recent Bookings</h4>
+              <div style={{overflowX:"auto"}}>
+                <table className="appt-table">
+                  <thead><tr><th>Client</th><th>Service</th><th>Time</th><th>Price</th><th>Status</th></tr></thead>
+                  <tbody>
+                    {appts.length === 0 ? (
+                      <tr><td colSpan="5" style={{textAlign:"center", padding:"20px"}}>No recent bookings.</td></tr>
+                    ) : (
+                      appts.slice(0,3).map(a => (
+                        <tr key={a.id}>
+                          <td><strong>{a.clientName || a.clientId}</strong></td>
+                          <td>{a.service}</td>
+                          <td>{a.date} at {a.time}</td>
+                          <td>${a.price}</td>
+                          <td><span className={`status-badge status-${a.status}`}>{a.status}</span></td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
 
-      {tab === "appointments" && (
-        <>
-          <h4 style={{marginBottom:16,color:C.textMid,fontSize:15}}>All Upcoming Appointments</h4>
-          <div style={{overflowX:"auto"}}>
-            <table className="appt-table">
-              <thead><tr><th>Client</th><th>Service</th><th>Date</th><th>Time</th><th>Price</th><th>Status</th><th>Action</th></tr></thead>
-              <tbody>
-                {appts.map(a => (
-                  <tr key={a.id}>
-                    <td><strong>{a.client}</strong></td>
-                    <td>{a.service}</td>
-                    <td>{a.date}</td>
-                    <td>{a.time}</td>
-                    <td>${a.price}</td>
-                    <td><span className={`status-badge status-${a.status}`}>{a.status}</span></td>
-                    <td>
-                      {a.status === "pending" && (
-                        <button style={{background:C.green,color:C.white,border:"none",padding:"5px 12px",borderRadius:8,fontSize:12,cursor:"pointer",fontWeight:600}}>Accept</button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {tab === "appointments" && (
+            <>
+              <h4 style={{marginBottom:16,color:"#666",fontSize:15}}>All Appointments</h4>
+              <div style={{overflowX:"auto"}}>
+                <table className="appt-table">
+                  <thead><tr><th>Client</th><th>Service</th><th>Date</th><th>Time</th><th>Price</th><th>Status</th><th>Action</th></tr></thead>
+                  <tbody>
+                    {appts.length === 0 ? (
+                      <tr><td colSpan="7" style={{textAlign:"center", padding:"20px"}}>No appointments yet.</td></tr>
+                    ) : (
+                      appts.map(a => (
+                        <tr key={a.id}>
+                          <td><strong>{a.clientName || a.clientId}</strong></td>
+                          <td>{a.service}</td>
+                          <td>{a.date}</td>
+                          <td>{a.time}</td>
+                          <td>${a.price}</td>
+                          <td><span className={`status-badge status-${a.status}`}>{a.status}</span></td>
+                          <td>
+                            {a.status === "pending" && (
+                              <button onClick={() => acceptAppointment(a.id)} style={{background:"#2ecc71",color:"#fff",border:"none",padding:"5px 12px",borderRadius:8,fontSize:12,cursor:"pointer",fontWeight:600}}>
+                                Accept
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </>
       )}
 
       {tab === "availability" && (
         <>
           <div style={{marginBottom:20}}>
-            <h4 style={{fontSize:16,marginBottom:6,color:C.dark2}}>Set Your Weekly Hours</h4>
-            <p style={{fontSize:14,color:C.textLight}}>Toggle days on/off and set your working hours for each day.</p>
+            <h4 style={{fontSize:16,marginBottom:6,color:"#222"}}>Set Your Weekly Hours</h4>
+            <p style={{fontSize:14,color:"#888"}}>Toggle days on/off and set your working hours for each day.</p>
           </div>
           <div className="avail-grid">
             {availability.map((d, i) => (
@@ -878,23 +1138,25 @@ function BarberDashboard({ user }) {
                     <input type="time" value={d.end} onChange={e => updateTime(i,"end",e.target.value)} />
                   </div>
                 ) : (
-                  <span style={{marginLeft:"auto",color:C.textLight,fontSize:13}}>Closed</span>
+                  <span style={{marginLeft:"auto",color:"#888",fontSize:13}}>Closed</span>
                 )}
               </div>
             ))}
           </div>
-          <button className="submit-btn" style={{maxWidth:200,marginTop:24}}>Save Changes</button>
+          <button className="submit-btn" style={{maxWidth:200,marginTop:24}} onClick={saveAvailability}>
+            Save Changes
+          </button>
         </>
       )}
 
       {tab === "services" && (
         <>
           <div style={{marginBottom:20}}>
-            <h4 style={{fontSize:16,marginBottom:6,color:C.dark2}}>Your Services & Pricing</h4>
-            <p style={{fontSize:14,color:C.textLight}}>Clients see these when booking with you.</p>
+            <h4 style={{fontSize:16,marginBottom:6,color:"#222"}}>Your Services & Pricing</h4>
+            <p style={{fontSize:14,color:"#888"}}>Clients see these when booking with you.</p>
           </div>
           <div className="service-list">
-            {SERVICES.map(s => (
+            {(typeof SERVICES !== 'undefined' ? SERVICES : []).map(s => (
               <div key={s.id} className="service-item" style={{cursor:"default"}}>
                 <div>
                   <div className="service-name">{s.name}</div>
@@ -902,7 +1164,7 @@ function BarberDashboard({ user }) {
                 </div>
                 <div className="service-detail">
                   <span className="service-price">${s.price}</span>
-                  <button style={{background:"none",border:"1px solid #ddd",padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",color:C.textLight}}>Edit</button>
+                  <button style={{background:"none",border:"1px solid #ddd",padding:"5px 10px",borderRadius:8,fontSize:12,cursor:"pointer",color:"#888"}}>Edit</button>
                 </div>
               </div>
             ))}
@@ -914,10 +1176,11 @@ function BarberDashboard({ user }) {
   );
 }
 
+// THE MASTER DASHBOARD PARENT
 function Dashboard({ user, setPage }) {
-  const [tab, setTab] = useState(user.role === "barber" ? "overview" : "appointments");
+  const [tab, setTab] = useState(user.role === "barber" ? "overview" : "upcoming");
   const isBarber = user.role === "barber";
-  const clientTabs = [{ k:"appointments", l:"📅 Appointments" }, { k:"profile", l:"👤 Profile" }];
+  const clientTabs = [{ k:"upcoming", l:"📅 Appointments" }];
   const barberTabs = [{ k:"overview", l:"📊 Overview" }, { k:"appointments", l:"📅 Appointments" }, { k:"availability", l:"🕐 Availability" }, { k:"services", l:"✂️ Services" }];
   const tabs = isBarber ? barberTabs : clientTabs;
 
@@ -925,15 +1188,17 @@ function Dashboard({ user, setPage }) {
     <div className="dash-layout">
       <div className="sidebar">
         <div className="sidebar-user">
-          <div className="sidebar-avatar">{getInitials(user.name)}</div>
+          <div className="sidebar-avatar">{getInitials(user.name || "User")}</div>
           <div className="sidebar-name">{user.name}</div>
           <div className="sidebar-role">{isBarber ? `✂️ Barber · ${user.shop||"Your Shop"}` : "👤 Client"}</div>
         </div>
         {tabs.map(t => (
           <button key={t.k} className={`sidebar-item ${tab===t.k?"active":""}`} onClick={() => setTab(t.k)}>{t.l}</button>
         ))}
-        <button className="sidebar-item" style={{marginTop:"auto",color:C.red}} onClick={() => setPage("home")}>← Back to Home</button>
+        <button className="sidebar-item" style={{marginTop:"auto",color:"#e74c3c"}} onClick={() => setPage("home")}>← Back to Home</button>
       </div>
+      
+      {/* Checks if the user is a barber or client and loads the exact right dashboard */}
       {isBarber ? <BarberDashboard user={user} tab={tab} setTab={setTab} /> : <ClientDashboard user={user} />}
     </div>
   );
