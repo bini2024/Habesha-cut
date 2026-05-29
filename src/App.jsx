@@ -14,6 +14,8 @@ const C = {
   red: "#e74c3c", redBg: "#fdf0ef", blue: "#1DA1F2",
 };
 
+
+
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -84,6 +86,11 @@ const css = `
   .feat-icon{font-size:30px;margin-bottom:16px;}
   .feat-card h3{font-size:17px;font-weight:600;margin-bottom:10px;color:#2C2C2C;}
   .feat-card p{font-size:14px;color:#666;line-height:1.65;}
+
+  .book-btn:hover{background:#D4AF37;}
+  .ig-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:10px;border-radius:10px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;text-decoration:none;transition:all .2s;background:linear-gradient(135deg,#f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%);color:#fff;margin-bottom:10px;}
+.ig-btn:hover{opacity:0.88;transform:translateY(-1px);box-shadow:0 4px 16px rgba(220,39,67,0.35);}
+.bcard-bio{font-size:13px;color:#666;line-height:1.55;margin-bottom:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 
   .auth-bg{min-height:calc(100vh - 68px);background:#fcf8f0;display:flex;align-items:center;justify-content:center;padding:40px 20px;}
   .auth-box{background:#fff;padding:44px;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.07);width:100%;max-width:420px;}
@@ -459,6 +466,7 @@ function HomePage({ setPage, setSelectedBarber }) {
                 </div>
                 <div className="bcard-body">
                   <div className="bcard-loc">
+                    {b.bio && <div className="bcard-bio">{b.bio}</div>}
                     📍 {b.city ? b.city.charAt(0).toUpperCase() + b.city.slice(1) : "Canada"}
                   </div>
                   {b.bio && (
@@ -476,6 +484,31 @@ function HomePage({ setPage, setSelectedBarber }) {
                     <small style={{ color: C.textLight, fontSize: 12 }}>({b.reviews || 0})</small>
                     <span className="price">from ${b.price || 30}</span>
                   </div>
+                 {b.instagram && (
+  <a
+    className="ig-btn"
+    href={`https://instagram.com/${b.instagram.replace(/^@/, "")}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    onClick={e => e.stopPropagation()}
+  >
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+    View Portfolio on Instagram
+  </a>
+)}
                   <button
                     className="book-btn"
                     disabled={b.available === false}
