@@ -466,7 +466,7 @@ function HomePage({ setPage, setSelectedBarber }) {
                 </div>
                 <div className="bcard-body">
                   <div className="bcard-loc">
-                    {b.bio && <div className="bcard-bio">{b.bio}</div>}
+                    
                     📍 {b.city ? b.city.charAt(0).toUpperCase() + b.city.slice(1) : "Canada"}
                   </div>
                   {b.bio && (
