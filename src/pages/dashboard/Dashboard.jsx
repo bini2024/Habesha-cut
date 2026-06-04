@@ -1,9 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // 👈 Added
 import { C, getInitials } from "../../shared";
 import ClientDashboard from "./ClientDashboard";
 import BarberDashboard from "./BarberDashboard";
 
-export default function Dashboard({ user, setUser, setPage }) {
+// 👈 Removed setPage
+export default function Dashboard({ user, setUser }) {
+  const navigate = useNavigate(); // 👈 Added
   const isBarber = user.role === "barber";
   const [tab, setTab] = useState(isBarber ? "overview" : "upcoming");
 
@@ -41,7 +44,7 @@ export default function Dashboard({ user, setUser, setPage }) {
         <button
           className="sidebar-item"
           style={{ color: C.red, marginTop: 16 }}
-          onClick={() => setPage("home")}
+          onClick={() => navigate("/")} // 👈 Replaced setPage
         >
           ← Back to Home
         </button>

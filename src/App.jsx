@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
@@ -14,11 +15,9 @@ import BookingPage from "./pages/BookingPage";
 import Dashboard from "./pages/Dashboard/Dashboard";
 
 export default function App() {
-  const [page, setPage]                   = useState("home");
-  const [user, setUser]                   = useState(null);
-  const [selectedBarber, setSelectedBarber] = useState(null);
-  const [toast, setToast]                 = useState(null);
-  const [authLoading, setAuthLoading]     = useState(true);
+  const [user, setUser] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -53,20 +52,25 @@ export default function App() {
   }
 
   return (
-    <>
-      <Nav setPage={setPage} user={user} setUser={setUser} setToast={setToast} />
+    <Router>
+      <Nav user={user} setUser={setUser} setToast={setToast} />
 
-      {page === "home"        && <HomePage setPage={setPage} setSelectedBarber={setSelectedBarber} />}
-      {page === "for-barbers" && <ForBarbersPage setPage={setPage} />}
-      {page === "auth"        && <AuthPage setUser={setUser} setPage={setPage} setToast={setToast} />}
-      {page === "booking"     && selectedBarber && (
-        <BookingPage barber={selectedBarber} user={user} setPage={setPage} setToast={setToast} />
-      )}
-      {page === "dashboard"   && user && <Dashboard user={user} setUser={setUser} setPage={setPage} />}
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/for-barbers" element={<ForBarbersPage />} />
+        
+        {/* If user is logged in, redirect /auth to /dashboard */}
+        <Route path="/auth" element={!user ? <AuthPage setUser={setUser} setToast={setToast} /> : <Navigate to="/dashboard" />} />
+        
+        <Route path="/book" element={<BookingPage user={user} setToast={setToast} />} />
+        
+        {/* Protect the dashboard route so guests can't access it */}
+        <Route path="/dashboard" element={user ? <Dashboard user={user} setUser={setUser} /> : <Navigate to="/auth" />} />
+      </Routes>
 
       {toast && (
         <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />
       )}
-    </>
+    </Router>
   );
 }

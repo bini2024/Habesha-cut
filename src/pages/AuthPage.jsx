@@ -1,11 +1,14 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; // 👈 Added
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { C, GLOBAL_SERVICES, DEFAULT_AVAILABILITY } from "../shared";
 import { Spinner } from "../components/SharedUI";
 
-export default function AuthPage({ setUser, setPage, setToast }) {
+// 👈 Removed setPage
+export default function AuthPage({ setUser, setToast }) {
+  const navigate = useNavigate(); // 👈 Added
   const [mode, setMode] = useState("login");
   const [role, setRole] = useState("client");
   const [form, setForm] = useState({ name: "", email: "", password: "", shop: "", city: "toronto" });
@@ -63,7 +66,7 @@ export default function AuthPage({ setUser, setPage, setToast }) {
       }
 
       setUser(userData);
-      setPage("dashboard");
+      navigate("/dashboard"); // 👈 Replaced setPage
       setToast({ msg: `Welcome${userData.name ? ", " + userData.name : ""}! 👋`, type: "success" });
     } catch (error) {
       setErr(error.message.replace("Firebase: ", ""));

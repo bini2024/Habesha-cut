@@ -1,7 +1,11 @@
 import React from "react";
+import { useNavigate } from "react-router-dom"; // 👈 Added
 import { C } from "../shared";
 
-export default function ForBarbersPage({ setPage }) {
+// 👈 Removed setPage
+export default function ForBarbersPage() {
+  const navigate = useNavigate(); // 👈 Added
+
   return (
     <>
       <div className="barbers-hero">
@@ -10,7 +14,8 @@ export default function ForBarbersPage({ setPage }) {
         </div>
         <h2 className="serif">Grow your clientele.<br />Streamline your schedule.</h2>
         <p>Join Canada's fastest-growing Habesha barbershop network. Fill your chair, automate bookings, and focus on what you do best.</p>
-        <button className="nav-pill" onClick={() => setPage("auth")}>Join as a Barber</button>
+        {/* 👈 Replaced setPage with navigate */}
+        <button className="nav-pill" onClick={() => navigate("/auth")}>Join as a Barber</button>
       </div>
 
       <section className="section" style={{ background: C.white }}>
@@ -43,7 +48,8 @@ export default function ForBarbersPage({ setPage }) {
         <p style={{ color: "rgba(255,255,255,0.55)", marginBottom: 28, fontSize: 15 }}>
           It's free to join. Set up your profile in under 5 minutes.
         </p>
-        <button className="nav-pill" onClick={() => setPage("auth")}>
+        {/* 👈 Replaced setPage with navigate */}
+        <button className="nav-pill" onClick={() => navigate("/auth")}>
           Create Your Barber Profile →
         </button>
       </section>

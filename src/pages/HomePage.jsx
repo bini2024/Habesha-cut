@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { C, getInitials } from "../shared";
 import { StarRating, Spinner } from "../components/SharedUI";
 
-export default function HomePage({ setPage, setSelectedBarber }) {
+export default function HomePage() {
+  const navigate = useNavigate();
   const [city, setCity] = useState("toronto"); 
   const [allBarbers, setAllBarbers] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -191,8 +193,7 @@ export default function HomePage({ setPage, setSelectedBarber }) {
                     style={b.available === false ? { background: "#ccc", cursor: "not-allowed" } : {}}
                     onClick={() => {
                       if (b.available !== false) {
-                        setSelectedBarber(b);
-                        setPage("booking");
+                        navigate("/book", { state: { barber: b } });
                       }
                     }}
                   >

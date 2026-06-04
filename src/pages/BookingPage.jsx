@@ -1,11 +1,24 @@
 import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom"; // 👈 Added router hooks
 import { collection, doc, getDocs, query, where, runTransaction } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import emailjs from '@emailjs/browser';
 import { C, GLOBAL_SERVICES, DEFAULT_AVAILABILITY, FULL_DAYS, DAYS, MONTHS, getInitials } from "../shared";
 import { StarRating, Spinner } from "../components/SharedUI";
 
-export default function BookingPage({ barber, user, setPage, setToast }) {
+// 👈 Removed 'barber' and 'setPage' from props
+export default function BookingPage({ user, setToast }) {
+  const location = useLocation(); // 👈 Added
+  const navigate = useNavigate(); // 👈 Added
+  
+  // 👈 Retrieve barber passed from HomePage
+  const barber = location.state?.barber; 
+
+  // 👈 Safety check: If no barber data, send them home
+  useEffect(() => {
+    if (!barber) navigate("/");
+  }, [barber, navigate]);
+
   const [step, setStep]           = useState(1);
   const [service, setService]     = useState(null);
   const [date, setDate]           = useState(null);
@@ -19,6 +32,9 @@ export default function BookingPage({ barber, user, setPage, setToast }) {
   const [takenSlots, setTakenSlots] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [slotsLoading, setSlotsLoading] = useState(false);
+
+  // If redirecting, don't render the rest to prevent errors
+  if (!barber) return null;
 
   const activeServices = barber.services && barber.services.length > 0 ? barber.services : GLOBAL_SERVICES;
 
@@ -159,7 +175,8 @@ export default function BookingPage({ barber, user, setPage, setToast }) {
             <strong>{MONTHS[viewMonth.m]} {date}, {viewMonth.y} at {time}</strong>.
             A confirmation email has been sent.
           </p>
-          <button className="nav-pill" onClick={() => setPage("home")}>Back to Home</button>
+          {/* 👈 Replaced setPage with navigate */}
+          <button className="nav-pill" onClick={() => navigate("/")}>Back to Home</button>
         </div>
       </div>
     );
@@ -200,7 +217,8 @@ export default function BookingPage({ barber, user, setPage, setToast }) {
 
   return (
     <div className="booking-wrap">
-      <button className="back-btn" onClick={() => step > 1 ? setStep(step - 1) : setPage("home")}>
+      {/* 👈 Replaced setPage with navigate */}
+      <button className="back-btn" onClick={() => step > 1 ? setStep(step - 1) : navigate("/")}>
         ← {step > 1 ? "Back" : "All Barbers"}
       </button>
 
@@ -380,7 +398,8 @@ export default function BookingPage({ barber, user, setPage, setToast }) {
                 </div>
               </div>
               <div style={{ marginTop: 14, fontSize: 13, color: "#92650a", background: "#fff8e1", padding: "8px 12px", borderRadius: 8, border: "1px solid #f5e18a" }}>
-                💡 <button style={{ background: "none", border: "none", color: C.gold, fontWeight: 700, cursor: "pointer", fontSize: 13 }} onClick={() => setPage("auth")}>Sign in</button> to save your booking history and auto-fill details.
+                {/* 👈 Replaced setPage with navigate */}
+                💡 <button style={{ background: "none", border: "none", color: C.gold, fontWeight: 700, cursor: "pointer", fontSize: 13 }} onClick={() => navigate("/auth")}>Sign in</button> to save your booking history and auto-fill details.
               </div>
             </div>
           )}
